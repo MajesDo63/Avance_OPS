@@ -10,20 +10,13 @@
 
 ![GitHub followers](https://img.shields.io/github/followers/arjuncvinod?style=social) ![GitHub User's stars](https://img.shields.io/github/stars/arjuncvinod?style=social)<img src="https://komarev.com/ghpvc/?username=arjuncvinod" alt="" />
 
-<picture><img src="https://github.com/0xAbdulKhalid/0xAbdulKhalid/raw/main/assets/mdImages/about_me.gif" width = 30px align="center"></picture> <br> **About Me**
+<picture><img src="https://github.com/0xAbdulKhalid/0xAbdulKhalid/raw/main/assets/mdImages/about_me.gif" width = 30px align="center"></picture> <br> **Sobre nuestro proyecto**
 
 
- 🔭 I’m currently working on [My portfolio website](https://arjuncvinod.github.io)
+Creamos una infraestructura que permite proporcionar una página web por medio de un script automatizado que instala los servicios necesarios para que funcione como una aplicación. Incluye una página de registro, login y una página principal donde puedes ver un catálogo de productos; puedes agregar o quitar productos del carrito y editar la cantidad deseada.
 
- 🌱 I’m currently learning **React.js**
-
- 💬 Ask me about **Node.js, MongoDB, PHP, MySQL**
-
- 📫 Reach out to me: **arjuncvinod7@gmail.com**
-
- ✍ You can find my resume [here](https://drive.google.com/file/d/1ekHjHAyfKdtdQfXo_kETWMtlcA3wSV5g/view?usp=sharing)
-
- ⚡ Fun fact: **My first line of code was not "Hello World!"**
+**Link documentacion**
+https://docs.google.com/document/d/1Rpd2Hl8vlGI73LOc9XXjwX6jB2vk9RR9SaC7g_SFyIQ/edit?tab=t.0
 
  <p  align="center">
 <img src="https://user-images.githubusercontent.com/73097560/115834477-dbab4500-a447-11eb-908a-139a6edaec5c.gif">             

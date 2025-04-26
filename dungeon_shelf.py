@@ -1,6 +1,7 @@
 from flask import Flask, render_template_string, request, redirect, session
 from werkzeug.security import generate_password_hash, check_password_hash
 import boto3
+from uuid import uuid4
 
 # Flask app setup
 app = Flask(__name__)

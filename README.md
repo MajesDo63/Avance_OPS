@@ -17,6 +17,11 @@ Creamos una infraestructura que permite proporcionar una página web por medio d
 **Link documentacion**
 https://docs.google.com/document/d/1Rpd2Hl8vlGI73LOc9XXjwX6jB2vk9RR9SaC7g_SFyIQ/edit?tab=t.0
 
+Integrantes:
+Alan Mauricio Rivera Garza 
+Nicolás Olvera Aparicio 
+César Eduardo Valdez Pinto
+
 <p align="center"">
 <img src="https://media.giphy.com/media/jpVnC65DmYeyRL4LHS/giphy.gif" width="20%">
 </p>

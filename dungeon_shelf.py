@@ -93,7 +93,7 @@ register_html = style + """
   <div class="form-container">
     <h2>Crear Cuenta</h2>
     <form method="post" action="/register">
-      <input name="username" type="text" placeholder="Usuario" required>
+      <input name="name" type="text" placeholder="Usuario" required>
       <input name="password" type="password" placeholder="Contraseña" required>
       <button type="submit">Registrarse</button>
     </form>
@@ -111,7 +111,7 @@ login_html = style + """
   <div class="form-container">
     <h2>Iniciar Sesión</h2>
     <form method="post" action="/login">
-      <input name="username" type="text" placeholder="Usuario" required>
+      <input name="name" type="text" placeholder="Usuario" required>
       <input name="password" type="password" placeholder="Contraseña" required>
       <button type="submit">Entrar</button>
     </form>
@@ -124,9 +124,9 @@ login_html = style + """
 main_page_html = style + """
 <!DOCTYPE html>
 <html lang="es">
-<head><meta charset="UTF-8"><title>DungeonShelf</title></head>
+<head><meta charset="UTF-8"><title>Tienda de Cómics</title></head>
 <body>
-  <h1>Bienvenido, {{ username }}</h1>
+  <h1>Bienvenido, {{ name }}</h1>
   <form action="/logout" method="get"><button>Cerrar sesión</button></form>
   <h2>Catálogo</h2>
   <div class="catalogo">
@@ -168,27 +168,29 @@ def home():
 @env_app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        username = request.form.get('username')
+        name = request.form.get('name')
         password = request.form.get('password')
-        if not username or not password:
+        if not name or not password:
             return "<h3 style='color:red;'>Por favor completa todos los campos</h3><a href='/register'>Volver</a>"
-        if users_table.get_item(Key={'name': username}).get('Item'):
+        if users_table.get_item(Key={'name': name}).get('Item'):
             return "<h3 style='color:red;'>El usuario ya existe</h3><a href='/register'>Volver</a>"
-        users_table.put_item(Item={'name': username, 'password': generate_password_hash(password)})
-        return redirect('/login')
+        users_table.put_item(Item={'name': name, 'password': generate_password_hash(password)})
+        session['name'] = name
+        session['cart'] = []
+        return redirect('/index')
     return render_template_string(register_html)
 
 @env_app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form.get('username')
+        name = request.form.get('name')
         password = request.form.get('password')
-        if not username or not password:
+        if not name or not password:
             return "<h3 style='color:red;'>Por favor completa todos los campos</h3><a href='/login'>Volver</a>"
-        resp = users_table.get_item(Key={'name': username})
+        resp = users_table.get_item(Key={'name': name})
         user = resp.get('Item')
         if user and check_password_hash(user['password'], password):
-            session['username'] = username
+            session['name'] = name
             session['cart'] = []
             return redirect('/index')
         return "<h3 style='color:red;'>Credenciales incorrectas</h3><a href='/login'>Volver</a>"
@@ -196,12 +198,12 @@ def login():
 
 @env_app.route('/index', methods=['GET'])
 def index():
-    if 'username' not in session:
+    if 'name' not in session:
         return redirect('/login')
     comics = comics_table.scan().get('Items', [])
     cart = session.get('cart', [])
     total = sum(item['quantity'] * float(item['price']) for item in cart)
-    return render_template_string(main_page_html, username=session['username'], comics=comics, carrito=cart, total=f"{total:.2f}")
+    return render_template_string(main_page_html, name=session['name'], comics=comics, carrito=cart, total=f"{total:.2f}")
 
 @env_app.route('/agregar_carrito', methods=['POST'])
 def agregar_carrito():

@@ -1,7 +1,7 @@
 from flask import Flask, render_template_string, request, redirect, session
 from werkzeug.security import generate_password_hash, check_password_hash
 import boto3
-from uuid import uuid4
+from boto3.dynamodb.conditions import Key
 
 # Flask app setup
 app = Flask(__name__)
@@ -12,7 +12,7 @@ dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
 users_table = dynamodb.Table('users')
 comics_table = dynamodb.Table('comics')
 
-# CSS
+# CSS Styles
 style = """
 <style>
   body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; color: #333; text-align: center; }
@@ -94,7 +94,8 @@ main_html = style + """
 
 # Routes
 @app.route('/')
-def home(): return redirect('/register')
+def home():
+    return redirect('/register')
 
 @app.route('/register', methods=['GET','POST'])
 def register():
@@ -103,12 +104,13 @@ def register():
         pwd  = request.form['password']
         if not name or not pwd:
             return redirect('/register')
-        resp = users_table.get_item(Key={'name': name})
-        if 'Item' in resp:
+        # Usa query en vez de get_item cuando hay sort key
+        resp = users_table.query(KeyConditionExpression=Key('name').eq(name))
+        if resp.get('Count', 0) > 0:
             return "Usuario ya existe"
         users_table.put_item(Item={'name': name, 'password': generate_password_hash(pwd)})
-        session['name']=name
-        session['cart']=[]
+        session['name'] = name
+        session['cart'] = []
         return redirect('/index')
     return render_template_string(register_html)
 
@@ -117,21 +119,28 @@ def login():
     if request.method=='POST':
         name = request.form['name']
         pwd  = request.form['password']
-        resp = users_table.get_item(Key={'name': name})
-        user = resp.get('Item')
-        if user and check_password_hash(user['password'], pwd):
-            session['name']=name
-            session['cart']=[]
+        # Consulta todos los ítems con este name como partition key
+        resp = users_table.query(KeyConditionExpression=Key('name').eq(name))
+        items = resp.get('Items', [])
+        user = None
+        for it in items:
+            if check_password_hash(it['password'], pwd):
+                user = it
+                break
+        if user:
+            session['name'] = name
+            session['cart'] = []
             return redirect('/index')
         return "Credenciales inválidas"
     return render_template_string(login_html)
 
 @app.route('/index')
 def index():
-    if 'name' not in session: return redirect('/login')
+    if 'name' not in session:
+        return redirect('/login')
     comics = comics_table.scan().get('Items', [])
     cart   = session.get('cart', [])
-    total  = sum(i['quantity']*float(i['price']) for i in cart)
+    total  = sum(i['quantity'] * float(i['price']) for i in cart)
     return render_template_string(main_html, comics=comics, cart=cart, total=f"{total:.2f}")
 
 @app.route('/agregar_carrito', methods=['POST'])
@@ -140,12 +149,12 @@ def add_cart():
     price      = request.form['price']
     cart       = session.get('cart', [])
     for i in cart:
-        if i['issue_name']==issue_name:
-            i['quantity']+=1
+        if i['issue_name'] == issue_name:
+            i['quantity'] += 1
             break
     else:
-        cart.append({'issue_name': issue_name,'price':price,'quantity':1})
-    session['cart']=cart
+        cart.append({'issue_name': issue_name, 'price': price, 'quantity': 1})
+    session['cart'] = cart
     return redirect('/index')
 
 @app.route('/logout')
@@ -153,5 +162,5 @@ def logout():
     session.clear()
     return redirect('/login')
 
-if __name__=='__main__':
+if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

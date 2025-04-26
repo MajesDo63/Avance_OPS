@@ -25,7 +25,7 @@ style = """
   .carrito table { width: 100%; border-collapse: collapse; }
   .carrito th, .carrito td { padding: 10px; border: 1px solid #ddd; }
   .carrito th { background: #3498db; color: #fff; }
-  .actions { display: flex; gap: 10px; justify-content: center; }
+  .actions { display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; }
 </style>
 """
 
@@ -63,7 +63,7 @@ main_html = style + """
   <h1>Bienvenido, {{ session['name'] }}</h1>
   <div class="actions">
     <form action="/logout" method="get"><button>Cerrar sesión</button></form>
-    <form action="/checkout" method="post"><button>Comprar todo</button></form>
+    <form action="/index" method="get"><button>Ver catálogo</button></form>
   </div>
   <h2>Catálogo de Cómics</h2>
   <div class="catalogo">
@@ -74,7 +74,7 @@ main_html = style + """
       <form method="post" action="/agregar_carrito">
         <input type="hidden" name="issue_name" value="{{ c.issue_name }}">
         <input type="hidden" name="price" value="{{ c.price }}">
-        <button type="submit">Añadir</button>
+        <button type="submit">Añadir al carrito</button>
       </form>
     </div>
     {% endfor %}
@@ -103,18 +103,22 @@ main_html = style + """
       </tr>
       {% endfor %}
     </table>
-    <p><strong>Total:</strong> ${{ total }}</p>
+    <form action="/checkout" method="post" style="margin-top:20px;">
+      <button style="width:100%; padding:10px; background:#e74c3c;">Comprar Carrito</button>
+    </form>
+    <p style="margin-top:10px;"><strong>Total:</strong> ${{ total }}</p>
   </div>
 </body></html>
 """
 
 # Routes
 @app.route('/')
-def home(): return redirect('/register')
+def home():
+    return redirect('/register')
 
 @app.route('/register', methods=['GET','POST'])
 def register():
-    if request.method == 'POST':
+    if request.method=='POST':
         name = request.form['name']; pwd = request.form['password']
         if not name or not pwd: return redirect('/register')
         resp = users_table.query(KeyConditionExpression=Key('name').eq(name))
@@ -139,7 +143,7 @@ def index():
     if 'name' not in session: return redirect('/login')
     comics = comics_table.scan().get('Items', [])
     cart   = session.get('cart', [])
-    total = sum(i['quantity']*float(i['price']) for i in cart)
+    total  = sum(i['quantity']*float(i['price']) for i in cart)
     return render_template_string(main_html, comics=comics, cart=cart, total=f"{total:.2f}")
 
 @app.route('/agregar_carrito', methods=['POST'])

@@ -16,23 +16,22 @@ comics_table = dynamodb.Table('comics')
 style = """
 <style>
   body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; color: #333; text-align: center; }
-  .form-container { max-width: 400px; margin: 50px auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-  .form-container input, .form-container button { width: 100%; padding: 10px; margin: 8px 0; border-radius: 6px; border: 1px solid #ccc; }
-  .form-container button { background: #3498db; color: #fff; border: none; cursor: pointer; }
-  .catalogo { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; margin: 30px 0; }
-  .card { background: #fff; padding: 15px; border-radius: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); width: 200px; }
-  .card button { margin-top: 10px; padding: 8px; background: #27ae60; color: #fff; border: none; border-radius: 6px; cursor: pointer; width: 100%; }
-  .carrito { max-width: 600px; margin: 30px auto; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-  table { width: 100%; border-collapse: collapse; }
-  th, td { padding: 10px; border: 1px solid #ddd; }
-  th { background: #3498db; color: #fff; }
+  .form-container, .carrito, .catalogo { max-width: 600px; margin: 30px auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+  input, button, select { padding: 8px; margin: 8px 0; border-radius: 4px; border: 1px solid #ccc; }
+  button { background: #3498db; color: #fff; cursor: pointer; border: none; }
+  .catalogo { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; }
+  .card { width: 200px; }
+  .card button { background: #27ae60; width: 100%; }
+  .carrito table { width: 100%; border-collapse: collapse; }
+  .carrito th, .carrito td { padding: 10px; border: 1px solid #ddd; }
+  .carrito th { background: #3498db; color: #fff; }
+  .actions { display: flex; gap: 10px; justify-content: center; }
 </style>
 """
 
 # Templates
 register_html = style + """
-<!DOCTYPE html>
-<html lang="es"><head><meta charset="UTF-8"><title>Registro</title></head><body>
+<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Registro</title></head><body>
   <div class="form-container">
     <h2>Crear Cuenta</h2>
     <form method="post" action="/register">
@@ -46,8 +45,7 @@ register_html = style + """
 """
 
 login_html = style + """
-<!DOCTYPE html>
-<html lang="es"><head><meta charset="UTF-8"><title>Login</title></head><body>
+<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Login</title></head><body>
   <div class="form-container">
     <h2>Iniciar Sesión</h2>
     <form method="post" action="/login">
@@ -61,10 +59,12 @@ login_html = style + """
 """
 
 main_html = style + """
-<!DOCTYPE html>
-<html lang="es"><head><meta charset="UTF-8"><title>Catálogo</title></head><body>
+<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Catálogo</title></head><body>
   <h1>Bienvenido, {{ session['name'] }}</h1>
-  <form action="/logout" method="get"><button>Cerrar sesión</button></form>
+  <div class="actions">
+    <form action="/logout" method="get"><button>Cerrar sesión</button></form>
+    <form action="/checkout" method="post"><button>Comprar todo</button></form>
+  </div>
   <h2>Catálogo de Cómics</h2>
   <div class="catalogo">
     {% for c in comics %}
@@ -82,9 +82,25 @@ main_html = style + """
   <h2>Carrito</h2>
   <div class="carrito">
     <table>
-      <tr><th>Cómic</th><th>Precio</th><th>Cantidad</th></tr>
+      <tr><th>Cómic</th><th>Precio</th><th>Cantidad</th><th>Acciones</th></tr>
       {% for item in cart %}
-      <tr><td>{{ item.issue_name }}</td><td>${{ item.price }}</td><td>{{ item.quantity }}</td></tr>
+      <tr>
+        <td>{{ item.issue_name }}</td>
+        <td>${{ item.price }}</td>
+        <td>
+          <form method="post" action="/update_cart">
+            <input type="hidden" name="issue_name" value="{{ item.issue_name }}">
+            <input type="number" name="quantity" value="{{ item.quantity }}" min="1" style="width:60px;">
+            <button type="submit">Actualizar</button>
+          </form>
+        </td>
+        <td>
+          <form method="post" action="/remove_cart">
+            <input type="hidden" name="issue_name" value="{{ item.issue_name }}">
+            <button>Eliminar</button>
+          </form>
+        </td>
+      </tr>
       {% endfor %}
     </table>
     <p><strong>Total:</strong> ${{ total }}</p>
@@ -94,73 +110,69 @@ main_html = style + """
 
 # Routes
 @app.route('/')
-def home():
-    return redirect('/register')
+def home(): return redirect('/register')
 
 @app.route('/register', methods=['GET','POST'])
 def register():
-    if request.method=='POST':
-        name = request.form['name']
-        pwd  = request.form['password']
-        if not name or not pwd:
-            return redirect('/register')
-        # Usa query en vez de get_item cuando hay sort key
+    if request.method == 'POST':
+        name = request.form['name']; pwd = request.form['password']
+        if not name or not pwd: return redirect('/register')
         resp = users_table.query(KeyConditionExpression=Key('name').eq(name))
-        if resp.get('Count', 0) > 0:
-            return "Usuario ya existe"
+        if resp.get('Count',0)>0: return "Usuario ya existe"
         users_table.put_item(Item={'name': name, 'password': generate_password_hash(pwd)})
-        session['name'] = name
-        session['cart'] = []
+        session['name'], session['cart'] = name, []
         return redirect('/index')
     return render_template_string(register_html)
 
 @app.route('/login', methods=['GET','POST'])
 def login():
     if request.method=='POST':
-        name = request.form['name']
-        pwd  = request.form['password']
-        # Consulta todos los ítems con este name como partition key
-        resp = users_table.query(KeyConditionExpression=Key('name').eq(name))
-        items = resp.get('Items', [])
-        user = None
-        for it in items:
-            if check_password_hash(it['password'], pwd):
-                user = it
-                break
-        if user:
-            session['name'] = name
-            session['cart'] = []
-            return redirect('/index')
+        name = request.form['name']; pwd=request.form['password']
+        resp=users_table.query(KeyConditionExpression=Key('name').eq(name))
+        user=next((it for it in resp.get('Items',[]) if check_password_hash(it['password'],pwd)), None)
+        if user: session['name'], session['cart'] = name, []; return redirect('/index')
         return "Credenciales inválidas"
     return render_template_string(login_html)
 
 @app.route('/index')
 def index():
-    if 'name' not in session:
-        return redirect('/login')
+    if 'name' not in session: return redirect('/login')
     comics = comics_table.scan().get('Items', [])
     cart   = session.get('cart', [])
-    total  = sum(i['quantity'] * float(i['price']) for i in cart)
+    total = sum(i['quantity']*float(i['price']) for i in cart)
     return render_template_string(main_html, comics=comics, cart=cart, total=f"{total:.2f}")
 
 @app.route('/agregar_carrito', methods=['POST'])
 def add_cart():
-    issue_name = request.form['issue_name']
-    price      = request.form['price']
-    cart       = session.get('cart', [])
+    issue_name, price = request.form['issue_name'], request.form['price']
+    cart = session.get('cart', [])
     for i in cart:
-        if i['issue_name'] == issue_name:
-            i['quantity'] += 1
+        if i['issue_name']==issue_name: i['quantity']+=1; break
+    else: cart.append({'issue_name': issue_name,'price':price,'quantity':1})
+    session['cart']=cart; return redirect('/index')
+
+@app.route('/update_cart', methods=['POST'])
+def update_cart():
+    issue_name = request.form['issue_name']
+    qty = int(request.form['quantity'])
+    cart = session.get('cart', [])
+    for i in cart:
+        if i['issue_name']==issue_name:
+            i['quantity'] = qty
             break
-    else:
-        cart.append({'issue_name': issue_name, 'price': price, 'quantity': 1})
-    session['cart'] = cart
-    return redirect('/index')
+    session['cart']=cart; return redirect('/index')
 
-@app.route('/logout')
-def logout():
-    session.clear()
-    return redirect('/login')
+@app.route('/remove_cart', methods=['POST'])
+def remove_cart():
+    issue_name = request.form['issue_name']
+    cart = [i for i in session.get('cart', []) if i['issue_name']!=issue_name]
+    session['cart']=cart; return redirect('/index')
 
-if __name__ == '__main__':
+@app.route('/checkout', methods=['POST'])
+def checkout():
+    session['cart']=[]
+    return "<h2>Compra realizada con éxito. ¡Gracias!</h2><a href='/index'>Volver al catálogo</a>"
+
+if __name__=='__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
+

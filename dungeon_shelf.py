@@ -11,10 +11,6 @@ dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
 users_table = dynamodb.Table('users')
 comics_table = dynamodb.Table('comics')
 
-# DynamoDB key names - ajusta si difieren en tu tabla
-USER_KEY = 'name'        # clave primaria de la tabla users
-PASS_KEY = 'password'    # atributo de contraseña en la tabla users
-
 # CSS
 style = """
 <style>
@@ -66,7 +62,7 @@ login_html = style + """
 main_html = style + """
 <!DOCTYPE html>
 <html lang="es"><head><meta charset="UTF-8"><title>Catálogo</title></head><body>
-  <h1>Bienvenido, {{ name }}</h1>
+  <h1>Bienvenido, {{ session['name'] }}</h1>
   <form action="/logout" method="get"><button>Cerrar sesión</button></form>
   <h2>Catálogo de Cómics</h2>
   <div class="catalogo">
@@ -106,11 +102,10 @@ def register():
         pwd  = request.form['password']
         if not name or not pwd:
             return redirect('/register')
-        # Comprueba esquema
-        resp = users_table.get_item(Key={USER_KEY: name})
+        resp = users_table.get_item(Key={'name': name})
         if 'Item' in resp:
             return "Usuario ya existe"
-        users_table.put_item(Item={USER_KEY: name, PASS_KEY: generate_password_hash(pwd)})
+        users_table.put_item(Item={'name': name, 'password': generate_password_hash(pwd)})
         session['name']=name
         session['cart']=[]
         return redirect('/index')
@@ -121,9 +116,9 @@ def login():
     if request.method=='POST':
         name = request.form['name']
         pwd  = request.form['password']
-        resp = users_table.get_item(Key={USER_KEY: name})
+        resp = users_table.get_item(Key={'name': name})
         user = resp.get('Item')
-        if user and check_password_hash(user[PASS_KEY], pwd):
+        if user and check_password_hash(user['password'], pwd):
             session['name']=name
             session['cart']=[]
             return redirect('/index')
@@ -136,7 +131,7 @@ def index():
     comics = comics_table.scan().get('Items', [])
     cart   = session.get('cart', [])
     total  = sum(i['quantity']*float(i['price']) for i in cart)
-    return render_template_string(main_html, name=session['name'], comics=comics, cart=cart, total=f"{total:.2f}")
+    return render_template_string(main_html, comics=comics, cart=cart, total=f"{total:.2f}")
 
 @app.route('/agregar_carrito', methods=['POST'])
 def add_cart():

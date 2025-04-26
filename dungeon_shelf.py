@@ -63,7 +63,6 @@ main_html = style + """
   <h1>Bienvenido, {{ session['name'] }}</h1>
   <div class="actions">
     <form action="/logout" method="get"><button>Cerrar sesión</button></form>
-    <form action="/index" method="get"><button>Ver catálogo</button></form>
   </div>
   <h2>Catálogo de Cómics</h2>
   <div class="catalogo">

@@ -8,7 +8,6 @@
 <img align="right" alt="Coding" width="400" src="https://octodex.github.com/images/daftpunktocat-guy.gif">
 
 
-<img src="https://komarev.com/ghpvc/?username=arjuncvinod" alt="" />
 
 <picture><img src="https://github.com/0xAbdulKhalid/0xAbdulKhalid/raw/main/assets/mdImages/about_me.gif" width = 30px align="center"></picture> <br> **Sobre nuestro proyecto**
 

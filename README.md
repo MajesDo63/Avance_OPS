@@ -9,7 +9,7 @@
 
 
 
-<picture><img src="https://github.com/0xAbdulKhalid/0xAbdulKhalid/raw/main/assets/mdImages/about_me.gif" width = 30px align="center"></picture> <br> **Sobre nuestro proyecto**
+<br> **Sobre nuestro proyecto**
 
 
 Creamos una infraestructura que permite proporcionar una página web por medio de un script automatizado que instala los servicios necesarios para que funcione como una aplicación. Incluye una página de registro, login y una página principal donde puedes ver un catálogo de productos; puedes agregar o quitar productos del carrito y editar la cantidad deseada.
